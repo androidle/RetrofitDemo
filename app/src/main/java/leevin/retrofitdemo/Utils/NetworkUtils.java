@@ -1,0 +1,23 @@
+package leevin.retrofitdemo.Utils;
+
+import android.content.Context;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
+
+/**
+ * @author zjh
+ * @date 2016/9/1
+ */
+public class NetworkUtils {
+
+    public static boolean isNetworkAvailable(Context context) {
+        if (context != null) {
+            ConnectivityManager mConnectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+            NetworkInfo mNetworkInfo = mConnectivityManager.getActiveNetworkInfo();
+            if (mNetworkInfo != null) {
+                return mNetworkInfo.isAvailable();
+            }
+        }
+        return false;
+    }
+}

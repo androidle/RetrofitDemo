@@ -39,6 +39,7 @@
         <attr name="tabPadding" format="dimension"/>
         <!-- The preferred padding along all edges of tabs. -->
         <attr name="tabTextSize" format="dimension"/>
+        <attr name="tabMarginLeftAndRight" format="dimension"/>
     </declare-styleable>
 
     <declare-styleable name="TabItem">
@@ -46,6 +47,7 @@
         <attr name="android:icon"/>
         <attr name="android:layout"/>
     </declare-styleable>
+
     <declare-styleable name="BaseCircleMenuItemView">
         <attr name="titileName" format="string"/>
         <attr name="content" format="string"/>

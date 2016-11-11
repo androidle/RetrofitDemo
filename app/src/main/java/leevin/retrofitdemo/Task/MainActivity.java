@@ -30,6 +30,7 @@ import leevin.retrofitdemo.model.api.UserApi;
 import leevin.retrofitdemo.model.entity.ApiError;
 import leevin.retrofitdemo.model.entity.BaseResponse;
 import leevin.retrofitdemo.model.entity.UserInfo;
+import leevin.retrofitdemo.widget.test.TestActivity;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -142,8 +143,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()) {
             case R.id.btn_search:
-                hideSoftKeyBoard(this);
-                mTaskPresenter.loadData(false);
+//                hideSoftKeyBoard(this);
+//                mTaskPresenter.loadData(false);
+                gotoTestActivity();
                 break;
             case R.id.tv_error_msg:
                 hideSoftKeyBoard(this);
@@ -151,6 +153,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 break;
         }
 
+    }
+
+    private void gotoTestActivity() {
+        startActivity(TestActivity.getTestActivityIntent(this));
     }
 
     private void loadData() {

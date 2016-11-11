@@ -15,9 +15,11 @@
         <item name="tabMaxWidth">264dp</item>
         <item name="tabIndicatorColor">@color/colorAccent</item>
         <item name="tabIndicatorHeight">2dp</item>
-        <item name="tabPaddingStart">12dp</item>
-        <item name="tabPaddingEnd">12dp</item>
+        <item name="tabContentStart">10dp</item>
+        <item name="tabPaddingStart">0dp</item>
+        <item name="tabPaddingEnd">0dp</item>
         <item name="tabTextSize">16sp</item>
+        <item name="tabMarginLeftAndRight">5sp</item>
         <item name="tabSelectedTextColor">@color/colorAccent</item>
         <item name="tabTextColor">?android:textColorPrimary</item>
     </style>

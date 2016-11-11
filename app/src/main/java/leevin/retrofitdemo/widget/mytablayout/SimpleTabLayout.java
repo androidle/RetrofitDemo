@@ -5,7 +5,6 @@ import android.animation.AnimatorListenerAdapter;
 import android.animation.ValueAnimator;
 import android.content.Context;
 import android.content.res.ColorStateList;
-import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.database.DataSetObserver;
 import android.graphics.Canvas;
@@ -26,11 +25,13 @@ import android.support.v4.widget.TextViewCompat;
 import android.text.Layout;
 import android.text.TextUtils;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.util.TypedValue;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewParent;
+import android.view.WindowManager;
 import android.widget.HorizontalScrollView;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
@@ -66,6 +67,7 @@ public class SimpleTabLayout extends HorizontalScrollView {
     private static final int DEFAULT_ICON_VIEW_SIZE = 24;
     private static final int DEFAULT_TAB_SCROLLABLE_MIN_WIDTH = 72;
     private static final int DEFAULT_TAB_TEXT_SIZE_2LINE = 12;
+    private int mScreenWidth;
 
     public interface OnTabSelectedListener {
 
@@ -86,14 +88,15 @@ public class SimpleTabLayout extends HorizontalScrollView {
     int mTabPaddingEnd;
     int mTabPaddingBottom;
 
-    int mTabTextAppearance;
+    int mTabMargin;//可设置左右margin
+
     ColorStateList mTabTextColors;
     float mTabTextSize;
     float mTabTextMultiLineSize;
 
     final int mTabBackgroundResId;
 
-    int mTabMaxWidth = Integer.MAX_VALUE;
+    int mTabMaxWidth = Integer.MAX_VALUE>>2;
     private final int mRequestedTabMinWidth;
     private final int mRequestedTabMaxWidth;
     private final int mScrollableTabMinWidth;
@@ -107,7 +110,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
     private final ArrayList<OnTabSelectedListener> mSelectedListeners = new ArrayList<>();
     private OnTabSelectedListener mCurrentVpSelectedListener;
 
-//    private ValueAnimatorCompat mScrollAnimator;
     private ValueAnimator mScrollAnimator;
     ViewPager mViewPager;
     private PagerAdapter mPagerAdapter;
@@ -116,14 +118,12 @@ public class SimpleTabLayout extends HorizontalScrollView {
 //    private AdapterChangeListener mAdapterChangeListener;
 
     private boolean mSetupViewPagerImplicitly;
+    private boolean mIsAutoSupportScroll = false;//是否自动,超出屏幕支持滑动
 
     private static final Pools.Pool<Tab> sTabPool = new Pools.SynchronizedPool<>(16);
     // Pool we use as a simple RecyclerBin
     private final Pools.Pool<TabView> mTabViewPool = new Pools.SimplePool<>(12);
 
-    // 是否与文字宽度一致
-    private boolean mIsSameWidthForIndicatorAndText = true;
-    private Context mContext;
     public SimpleTabLayout(Context context) {
         this(context,null);
     }
@@ -135,7 +135,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
     public SimpleTabLayout(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 
-        mContext = context;
         // Disable the Scroll Bar
         setHorizontalScrollBarEnabled(false);
         // Add the TabStrip
@@ -158,23 +157,7 @@ public class SimpleTabLayout extends HorizontalScrollView {
                 mTabPaddingEnd);
         mTabPaddingBottom = a.getDimensionPixelSize(R.styleable.SimpleTabLayout_tabPaddingBottom,
                 mTabPaddingBottom);
-//        // 从默认样式中获取
-//        mTabTextAppearance = a.getResourceId(R.styleable.SimpleTabLayout_tabTextAppearance,
-//                R.style.TextAppearance_Design_Tab);
-//
-//        // Text colors/sizes come from the text appearance first
-//        final TypedArray ta = context.obtainStyledAttributes(mTabTextAppearance,
-//               R.styleable.TextAppearance);
-//        try {
-//            mTabTextSize = ta.getDimensionPixelSize(
-//                    R.styleable.TextAppearance_android_textSize, 0);
-//            mTabTextColors = ta.getColorStateList(
-//                    R.styleable.TextAppearance_android_textColor);
-//        } finally {
-//            ta.recycle();
-//        }
-//        mTabTextSize = a.getDimensionPixelSize(R.styleable.SimpleTabLayout_tabTextSize, 0);
-
+        mTabMargin = a.getDimensionPixelSize(R.styleable.SimpleTabLayout_tabMarginLeftAndRight,0);
         // 获取设定的tabTextSize
         if (a.hasValue(R.styleable.SimpleTabLayout_tabTextSize)) {
             mTabTextSize = a.getDimensionPixelSize(R.styleable.SimpleTabLayout_tabTextSize, 0);
@@ -206,17 +189,14 @@ public class SimpleTabLayout extends HorizontalScrollView {
         // TODO add attr for these
         mTabTextMultiLineSize = spToPx(DEFAULT_TAB_TEXT_SIZE_2LINE);
         mScrollableTabMinWidth = dpToPx(DEFAULT_TAB_SCROLLABLE_MIN_WIDTH);
-
+        mScreenWidth = getScreenWidth(context);
         // Now apply the tab mode and gravity
         applyModeAndGravity();
     }
 
-    public boolean isSameWidthForIndicatorAndText() {
-        return mIsSameWidthForIndicatorAndText;
-    }
-
-    public void setSameWidthForIndicatorAndText(boolean sameWidthForIndicatorAndText) {
-        mIsSameWidthForIndicatorAndText = sameWidthForIndicatorAndText;
+    private int getScreenWidth(Context context) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
+        return wm.getDefaultDisplay().getWidth();
     }
 
     public float getTabTextSize() {
@@ -657,6 +637,8 @@ public class SimpleTabLayout extends HorizontalScrollView {
         } else {
             lp.width = LinearLayout.LayoutParams.WRAP_CONTENT;
             lp.weight = 0;
+            lp.leftMargin = mTabMargin;
+            lp.rightMargin = mTabMargin;
         }
     }
 
@@ -713,6 +695,14 @@ public class SimpleTabLayout extends HorizontalScrollView {
                     remeasure = child.getMeasuredWidth() != getMeasuredWidth();
                     break;
             }
+            if (mIsAutoSupportScroll) {
+                mMode = MODE_SCROLLABLE;
+                applyModeAndGravity();
+            }
+//            if (! mIsAutoSupportScroll && mScreenWidth < child.getMeasuredWidth()) {
+//                mMode = MODE_SCROLLABLE;
+////                super.onMeasure(widthMeasureSpec, heightMeasureSpec);//让父类HorizontalScrollView重新测量,
+//            }
 
             if (remeasure) {
                 // Re-measure the child with a widthSpec set to be exactly our measure width
@@ -1062,7 +1052,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
 
             // We need to switch the text size based on whether the text is spanning 2 lines or not
             if (mTextView != null) {
-                final Resources res = getResources();
                 float textSize = mTabTextSize;
                 int maxLines = mDefaultMaxLines;
 
@@ -1071,7 +1060,8 @@ public class SimpleTabLayout extends HorizontalScrollView {
                     maxLines = 1;
                 } else if (mTextView != null && mTextView.getLineCount() > 1) {
                     // Otherwise when we have text which wraps we reduce the text size
-                    textSize = mTabTextMultiLineSize;
+                    // textSize = mTabTextMultiLineSize;
+                    maxLines = 1;
                 }
 
                 final float curTextSize = mTextView.getTextSize();
@@ -1082,7 +1072,7 @@ public class SimpleTabLayout extends HorizontalScrollView {
                     // We've got a new text size and/or max lines...
                     boolean updateTextView = true;
 
-                    if (mMode == MODE_FIXED && textSize > curTextSize && curLineCount == 1) {
+                    /*if (mMode == MODE_FIXED && textSize > curTextSize && curLineCount == 1) {
                         // If we're in fixed mode, going up in text size and currently have 1 line
                         // then it's very easy to get into an infinite recursion.
                         // To combat that we check to see if the change in text size
@@ -1093,7 +1083,7 @@ public class SimpleTabLayout extends HorizontalScrollView {
                                 > getMeasuredWidth() - getPaddingLeft() - getPaddingRight()) {
                             updateTextView = false;
                         }
-                    }
+                    }*/
 
                     if (updateTextView) {
                         mTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize);
@@ -1120,7 +1110,7 @@ public class SimpleTabLayout extends HorizontalScrollView {
             final Tab tab = mTab;
             // TODO: 2016/11/8 是否支持添加customerView
             if (tab == null) {
-                throw new IllegalArgumentException("tab == null");
+                throw new NullPointerException("tab == null");
             }
             // If there isn't a custom view, we'll us our own in-built layouts
             if (mIconView == null) {
@@ -1136,7 +1126,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
             }
 //            TextViewCompat.setTextAppearance(mTextView, mTabTextAppearance);
             // 设置字体颜色与大小
-            mTextView.setTextColor(mTabTextColors);
             mTextView.setTextSize(mTabTextSize);
             if (mTabTextColors != null) {
                 mTextView.setTextColor(mTabTextColors);
@@ -1320,7 +1309,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
 
                 final int gutter = dpToPx(FIXED_WRAP_GUTTER_MIN);
                 boolean remeasure = false;
-
                 if (largestTabWidth * count <= getMeasuredWidth() - gutter * 2) {
                     // If the tabs fit within our width minus gutters, we will set all tabs to have
                     // the same width
@@ -1342,8 +1330,10 @@ public class SimpleTabLayout extends HorizontalScrollView {
                 }
 
                 if (remeasure) {
+                    Log.e("TAG", "remeasure: =============================");
                     // Now re-measure after our changes
                     super.onMeasure(widthMeasureSpec, heightMeasureSpec);
+                    super.requestLayout();
                 }
             }
         }
@@ -1379,9 +1369,6 @@ public class SimpleTabLayout extends HorizontalScrollView {
             } else {
                 left = right = -1;
             }
-            // 若indicator与文字宽度一致,则修正值
-            left = mIsSameWidthForIndicatorAndText ? left + mTabPaddingStart : left;
-            right = mIsSameWidthForIndicatorAndText ? right - mTabPaddingEnd : right;
 
             setIndicatorPosition(left, right);
         }
@@ -1402,16 +1389,16 @@ public class SimpleTabLayout extends HorizontalScrollView {
                 return;
             }
             // 若indicator与文字宽度一致,则修正值
-           final int targetLeft = mIsSameWidthForIndicatorAndText ? targetView.getLeft() + mTabPaddingStart : targetView.getLeft() ;
-           final int targetRight = mIsSameWidthForIndicatorAndText ? targetView.getRight() - mTabPaddingEnd : targetView.getRight();
+           final int targetLeft = targetView.getLeft() ;
+           final int targetRight = targetView.getRight();
 
             final int startLeft;
             final int startRight;
 
             if (Math.abs(position - mSelectedPosition) <= 1) {
                 // If the views are adjacent, we'll animate from edge-to-edge
-                startLeft = mIsSameWidthForIndicatorAndText ? mIndicatorLeft + mTabPaddingStart : mIndicatorLeft;
-                startRight = mIsSameWidthForIndicatorAndText ? mIndicatorRight - mTabPaddingEnd : mIndicatorRight;
+                startLeft = mIndicatorLeft;
+                startRight = mIndicatorRight;
             } else {
                 // Else, we'll just grow from the nearest edge
                 final int offset = dpToPx(MOTION_NON_ADJACENT_OFFSET);

@@ -103,20 +103,6 @@ public class BeanConvertor extends Convertor {
             } else if (targetType == returnType) {
                 targetField.set(destination, sourceFileObj);
             } else {
-             //                boolean convertIfDiff =
-//                        (copyType == CopyType.to ? targetField : field).isAnnotationPresent(
-//                                ConvertIfDiff.class);
-//                if (convertIfDiff) {
-//
-//                    Constructor targetConstructor = targetType.getDeclaredConstructor();
-//                    targetConstructor.setAccessible(true);
-//                    Object targetObject = targetConstructor.newInstance();
-//                    //Object targetObject = targetType.newInstance();
-//                    converterBean(sourceFileObj, targetObject, copyType);
-//                    targetField.set(destination, targetObject);
-//                } else {
-//                    targetField.set(destination, sourceFileObj.toString());
-//                }
                 // 修改后不用加@convertIfDiff注解只要属性名相同,类型不同也可以转
                 // 加@NotConvert可不参与转化
                 Constructor targetConstructor = targetType.getDeclaredConstructor();
